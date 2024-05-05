@@ -1,0 +1,429 @@
+---
+title: "Cyclistic_bikes_questions"
+author: "ysnmslk"
+date: "2024-04-27"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question of Analysis
+
+#### 1 How do annual members and casual riders use Cyclistic bikes differently?
+
+#### 2. Why would casual riders buy Cyclistic annual memberships?
+
+#### 3. How can Cyclistic use digital media to influence casual riders to become members?
+
+######################################################################################## 
+######################################################################################## 
+######################################################################################## 
+
+#### Kütüphanelerin yüklenmesi
+
+#### Load Packages
+
+install.packages("tidyverse")
+
+library(readr)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(skimr)
+library(janitor)
+library(ggplot2)
+
+######################################################################################## 
+######################################################################################## 
+######################################################################################## 
+
+## Verisetlerini Okuma
+
+## Read Datasets
+
+td2023_1 <- read_csv("202301-divvy-tripdata.csv") # File name or full path of the file
+td2023_2 <- read_csv("202302-divvy-tripdata.csv") # File name or full path of the file
+td2023_3 <- read_csv("202303-divvy-tripdata.csv") # File name or full path of the file
+td2023_4 <- read_csv("202304-divvy-tripdata.csv") # File name or full path of the file
+td2023_5 <- read_csv("202305-divvy-tripdata.csv") # File name or full path of the file
+td2023_6 <- read_csv("202306-divvy-tripdata.csv") # File name or full path of the file
+td2023_7 <- read_csv("202307-divvy-tripdata.csv") # File name or full path of the file
+td2023_8 <- read_csv("202308-divvy-tripdata.csv") # File name or full path of the file
+td2023_9 <- read_csv("202309-divvy-tripdata.csv") # File name or full path of the file
+td2023_10 <- read_csv("202310-divvy-tripdata.csv") # File name or full path of the file
+td2023_11 <- read_csv("202311-divvy-tripdata.csv") # File name or full path of the file
+td2023_12 <- read_csv("202312-divvy-tripdata.csv") # File name or full path of the file
+
+
+
+View(td2023_1)
+View(td2023_2)
+View(td2023_3)
+View(td2023_4)
+View(td2023_5)
+View(td2023_6)
+View(td2023_7)
+View(td2023_8)
+View(td2023_9)
+View(td2023_10)
+View(td2023_11)
+View(td2023_12)
+
+
+## Understanding Dataset
+
+
+
+## The skim without charts function gives us a pretty comprehensive summary of a dataset.
+
+skim_without_charts(td2023_1) 
+skim_without_charts(td2023_2)
+
+summary(td2023_12) 
+summary(td2023_11)
+
+glimpse(td2023_10) 
+glimpse(td2023_9)
+
+colnames(td2023_8)
+colnames(td2023_7)
+
+str(td2023_5)
+str(td2023_6)
+
+
+colnames(td2023_7)
+
+#### [1] "ride_id"            "rideable_type"      "started_at"         "ended_at"           "start_station_name" "start_station_id"   "end_station_name"  
+####  [8] "end_station_id"     "start_lat"          "start_lng"          "end_lat"            "end_lng"            "member_casual"    
+
+#### After check all datasets and be sure all of same columns we can bind all of them
+
+data_2023 <- rbind(td2023_1,td2023_2,td2023_3,td2023_4,td2023_5,td2023_6,td2023_7,td2023_8,td2023_9,td2023_10,td2023_11,td2023_12)
+
+str(data_2023)
+dim(data_2023)
+
+#### Rename of columnnames
+
+  (data_2023 <- rename(data_2023, 
+          bikeid = ride_id , 
+          biketype =rideable_type,
+          start_time= started_at, 
+          end_time = ended_at,
+          from_station_name= start_station_name ,
+          from_station_id =start_station_id ,
+          to_station_name = end_station_name ,
+          to_station_id =end_station_id, 
+          usertype = member_casual ))
+
+head(data_2023)
+
+#It is always good to backup raw data before data cleaning.
+#Write as a csv file
+
+write_csv(data_2023, "total_data_2023.csv") 
+
+head(data_2023,12) #First 12 row we can see
+
+## Data Cleaning
+
+#### Preprocessing of the data is important before analysis, so null values have to be checked and removed.
+
+str(data_2023)
+
+View(data_2023)
+
+glimpse(data_2023)
+
+dim(data_2023)
+
+sum(is.null(data_2023)) #be sure that get rid of null datas. 
+
+
+#In this step we generate new colums that dates split to see under part of date when we analyze
+
+data_2023$date <- as.Date(data_2023$start_time)
+data_2023$day <- format(as.Date(data_2023$date),"%d")
+data_2023$month <- format(as.Date(data_2023$date),"%m")
+data_2023$year <- format(as.Date(data_2023$date),"%Y") #to get the year as separate column
+data_2023$day_of_week <- format(as.Date(data_2023$date),"%A")
+
+colnames(data_2023)
+head(data_2023)
+View(data_2023)
+
+# After adding extra date columns, we save again. because we may want to continue the analysis with different tools.
+write_csv(data_2023, "extra_columns_total_data_2023.csv") 
+
+
+# Remove lat, long, birthyear, and gender fields as this data was dropped beginning in 2020
+
+data_2023 <- data_2023 %>% 
+select(-c(start_lat,start_lng, end_lat,end_lng, from_station_id, from_station_name, to_station_name, to_station_id  ))
+
+colnames(data_2023)
+
+
+######################################################################################## 
+######################################################################################## 
+######################################################################################## 
+
+#### STEP 4: Clean up and prepare for data analysis
+
+colnames(data_2023) #List of column names 
+nrow(data_2023) #How many rows are in data frame? 
+dim(data_2023) #Dimensions of the data frame?
+head(data_2023) #See the first 6 rows of data frame. tail(div_2019_2)
+str(data_2023) #See list of columns and data types (numeric, character,etc) 
+summary(data_2023) #Statistical summary of data. Mainly for numerics
+
+
+# To learn each of column null data
+
+colSums(is.na(data_2023))
+
+  # calculate the trip time
+  * The resulted ride_time is given in the 'Seconds' so we have converted it into 'Minutes' by dividing it by 60.
+?difftime()
+
+data_2023$tripduration <- difftime(data_2023$end_time, data_2023$start_time, units= "mins") #Second way to find same things
+
+summary(data_2023$tripduration)
+head(data_2023)
+
+
+# To know the unique values from 'usertype '
+unique(data_2023$usertype )
+
+
+# To know the unique values from 'biketype '
+unique(data_2023$usertype )
+
+
+
+# Convert "tripduration" from Factor to numeric so we can run calculations on the data
+
+is.factor(data_2023$tripduration) 
+data_2023$tripduration <-as.numeric(as.character(data_2023$tripduration))
+
+is.factor(data_2023$tripduration) 
+is.numeric(data_2023$tripduration)
+
+
+# Removed rows which had negative tripduration but I dont want to so under 10 minutes trips effect analyze 
+data_2023 <- data_2023 %>%
+  filter(tripduration > 10)
+  
+
+
+######################################################################################## 
+######################################################################################## 
+######################################################################################## 
+
+#### STEP 5: CONDUCT DESCRIPTIVE ANALYSIS
+
+# to save original datas we analyze copy to datas a new file
+
+trip_datas <- data_2023
+
+
+colnames(trip_datas)
+
+
+
+table(trip_datas$usertype) //Table of usertype
+table(trip_datas$biketype) //Table of biketype
+
+bikeofusertype <- table(trip_datas$usertype, trip_datas$biketype ) #which user choose which bike
+
+
+?write.table()
+write.table(bikeofusertype, file = "Usertype_ofbik_chose.csv", sep = ",", quote = FALSE, row.names = TRUE )
+
+View(trip_datas)
+
+#### Descriptive analysis on ride_length (all figures in seconds)
+
+
+
+summary(trip_datas$tripduration)
+
+# You can condense the four lines above to one line using summary() on the specific attribute
+
+summary(trip_datas$tripduration)
+
+# Compare members and casual users
+
+aggregate(trip_datas$tripduration~trip_datas$usertype,FUN=max)
+
+min_trip_duration <- aggregate(trip_datas$tripduration~trip_datas$usertype,FUN=min)
+average_trip_duration <-aggregate(trip_datas$tripduration~trip_datas$usertype,FUN=mean)
+median_trip_duration <-aggregate(trip_datas$tripduration~trip_datas$usertype,FUN=median)
+max_trip_duration <-aggregate(trip_datas$tripduration~trip_datas$usertype,FUN=max)
+
+trip_duration_datas <- rbind(min_trip_duration, average_trip_duration,median_trip_duration,max_trip_duration )
+
+write.table(trip_duration_datas, file = "trip_duration_datas.csv", sep = ",", quote = FALSE,  row.names = TRUE )
+
+summary(trip_datas$tripduration)
+
+
+# Sort days of the week # Notice that the days of the week are out of order. Let's fix that.
+
+trip_datas$day_of_week <- ordered(trip_datas$day_of_week, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+
+
+## Comparing by each day of week for member vs casual
+datasof_usertype_days <- trip_datas %>%
+        group_by(usertype, day_of_week) %>%
+        summarise(
+                average_ride_duration = mean(tripduration),
+                max = max(tripduration),
+                min = min(tripduration)) %>%
+        arrange(usertype, day_of_week)
+
+View(datasof_usertype_days)
+  
+  write.table(datasof_usertype_days, file = "datasof_usertype_day.csv", sep = ",", quote = FALSE,  row.names = TRUE )
+
+ggplot(datasof_usertype_days, aes(x = day_of_week, y = average_ride_duration, fill = usertype, colour = usertype)) + 
+geom_bar(position = "dodge", stat="identity")
+  
+
+######################################################################################## 
+######################################################################################## 
+######################################################################################## 
+
+View(trip_datas)
+colnames(trip_datas)
+
+## It's time to Visualization to share MOrena 
+#### Plot an bar_chart to compare the number of rides visually
+
+#Total number of rides for the year 2023
+ggplot(data = trip_datas)+
+  geom_bar(mapping = aes(x=usertype,  fill=usertype),show.legend = FALSE,width = 0.8)+
+  labs(y="total",title = "Total number of rides for the year 2023")
+    ggsave("Total number of rides for the year 2023.png")
+ 
+ 
+ 
+ ?pie() 
+# Create a data frame of member_casual_count_summary
+type_of_users_summary<- trip_datas %>% 
+                group_by(usertype) %>% 
+                summarise(count=n())
+                              
+# Create a labels for pie chart
+pie_labels <- paste0(round(100*type_of_users_summary$count/sum(type_of_users_summary$count),2),"%")
+
+pie(type_of_users_summary$count, labels = as.character(pie_labels), lty=2, col =  c("lightblue", "pink"), main = "% of ride by customer type")
+
+
+# __2) Total rides taken per month for each type of customers__  
+
+
+# Select the required columns & reshape the data
+monthly_ride_count <- trip_datas %>% 
+                      group_by(month,usertype) %>% 
+                      summarise(count_of_ride =n())
+
+# Plot the line chart 
+ggplot(monthly_ride_count,aes(x=month,y=count_of_ride,group=usertype,xlim(0,400000)))+
+  geom_point(aes(color=usertype),size=1.5)+
+  geom_line(aes(color=usertype),size=1)+
+  labs(x="Month",y="Count_of_rides",title = "Total No. of rides per month")
+
+
+## Monthly ride count difference between member and casual riders
+
+# Created an subset of data frame
+
+monthly_ride_count_2 <- monthly_ride_count %>%
+          pivot_wider(names_from = usertype,values_from = count_of_ride) %>% #use pivot_mutate(ride_count_diff = member-casual)
+          mutate(ride_count_diff = member-casual)
+print(monthly_ride_count_2)
+      
+## Average of monthly ride count difference between member and casual riders
+      
+ mean(monthly_ride_count_2$ride_count_diff)     
+      
+      
+# __3) Total rides taken each day in a week for each type of customers__
+  
+ colnames(trip_datas) 
+ day_wise_ride_count <- trip_datas %>% 
+                      group_by(day_of_week,usertype) %>% 
+                      summarise(count_of_ride =n()) %>% 
+                      pivot_wider(names_from = usertype,values_from = count_of_ride) %>% 
+                      mutate(total_rides = casual+member) %>% 
+                      mutate(casual_percentage= (casual/total_rides)*100) %>% 
+                      mutate(member_percentage= (member/total_rides)*100)
+print(day_wise_ride_count) 
+  
+  
+day_wise_ride_count_2 <- trip_datas %>% 
+                      group_by(day_of_week,usertype) %>% 
+                      summarise(count_of_ride =n())
+ggplot(data = day_wise_ride_count_2)+
+  geom_col(mapping=aes(x=day_of_week,y=count_of_ride,fill=usertype))+
+  labs(x="day_of_week",y="Count_of_rides",title = "Day wise total ride count")  
+  
+  
+  
+  View(trip_datas)
+# __4) Types of bikes per type of customers__
+  
+bike_type_count <- trip_datas %>% 
+                   group_by(biketype) %>% 
+                   summarise(ride_count=n()) %>% 
+                   mutate(ride_count_percentage = round(100*ride_count/sum(ride_count),1))
+print(bike_type_count)
+  
+ pie(bike_type_count$ride_count,labels = paste0(bike_type_count$ride_count_percentage,"%"),col = rainbow(length(bike_type_count$ride_count)))
+legend(bike_type_count$rideable_type,cex = 0.8,fill = rainbow(length(bike_type_count$ride_count))) 
+  
+  
+bike_type_count_2 <- trip_datas %>% 
+                   group_by(biketype,usertype) %>%
+                   summarise(ride_count=n()) %>% 
+                   pivot_wider(names_from = usertype,values_from = ride_count) %>% 
+                   mutate(total_ride_count = sum(casual,member,na.rm=TRUE)) %>% 
+                   mutate(casual_percentage = round(100*(casual/total_ride_count),2)) %>% 
+                   mutate(member_percentage = round(100*(member/total_ride_count),2))
+print(bike_type_count_2)
+  
+  
+  
+  
+bike_type_count_3 <- trip_datas %>% 
+                   group_by(biketype,usertype) %>%
+                   summarise(ride_count=n())
+ggplot(data = bike_type_count_3)+
+  geom_col(mapping=aes(x=biketype,y=ride_count,fill=usertype))+
+  labs(x="biketype",y="total_rides",title = "Total number of rides/rideable type")
+  
+  
+# __V) Share & Act__
+
+I will skip the following steps __Share__ and __Act__ because, the analysis is a personal project.
+I will go directly to findings and recommendations.   
+  
+# __VI) Findings and Recommendations__  
+
+## __1) How do annual members and casual riders use Cyclistic bikes differently?__
+
+
+
+
+
